@@ -1,0 +1,1183 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>INDUX | Strategic Defense Industrialization</title>
+    
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Inter', 'sans-serif'] },
+                    colors: {
+                        slate: { 50: '#f8fafc', 100: '#f1f5f9', 200: '#e2e8f0', 300: '#cbd5e1', 400: '#94a3b8', 500: '#64748b', 600: '#475569', 700: '#334155', 800: '#1e293b', 900: '#0f172a', 950: '#020617' },
+                        cyan: { 400: '#22d3ee', 500: '#06b6d4', 600: '#0891b2', 900: '#164e63' },
+                        emerald: { 400: '#34d399', 500: '#10b981', 600: '#059669' }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <!-- FontAwesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <!-- React & ReactDOM -->
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+    
+    <!-- Babel for JSX -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <style>
+        body { background-color: #020617; color: #f8fafc; font-family: 'Inter', sans-serif; overflow-x: hidden; }
+        
+        /* Custom Scrollbar for Textareas */
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #475569; }
+
+        /* Component Transitions */
+        .interactive-node { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); cursor: pointer; }
+        .interactive-node:hover { transform: translateY(-3px); box-shadow: 0 10px 25px -5px rgba(6, 182, 212, 0.15); border-color: #06b6d4; }
+        
+        /* Flow Diagram Animations */
+        .flow-arrow { transition: color 0.3s ease; }
+        .flow-arrow.active-flow { color: #06b6d4; }
+        .factory-node { transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
+        .factory-active { 
+            opacity: 1 !important; 
+            border-color: #06b6d4 !important; 
+            box-shadow: 0 0 25px rgba(6, 182, 212, 0.25) !important; 
+            transform: scale(1.03); 
+            background-color: rgba(6, 182, 212, 0.1) !important; 
+        }
+    </style>
+</head>
+<body class="antialiased selection:bg-cyan-900 selection:text-cyan-50">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef } = React;
+
+        // --- Data Definitions ---
+        
+        const domainsData = {
+            UAS: {
+                title: "Unmanned Aerial Systems (UAS)",
+                icon: "fa-solid fa-crosshairs",
+                tagline: "Maximize range and strike capability.",
+                details: "From FPV swarms to long-endurance ISR. We provide ultra-lightweight, EMI-shielded PCBAs, robust brushless motors, and zero-defect avionics. Production scales to handle heavy-lift 20kg payload systems and 28-hour endurance platforms.",
+                features: ["0201 SMT Miniaturization", "EW-Hardened Comms", "High-Voltage ESCs"]
+            },
+            UGV: {
+                title: "Unmanned Ground Vehicles (UGV)",
+                icon: "fa-solid fa-truck-monster",
+                tagline: "High-torque drivetrains and inductive navigation.",
+                details: "Built for logistics, MedEvac, and frontline assault in the harshest terrains. We integrate high-torque gear motors, IP68-rated enclosures, and inductive sensors that ignore mud, water, and snow.",
+                features: ["Nordic Winterization (-40°C)", "Thermal Liquid Cooling", "Hall-Effect Sensors"]
+            },
+            USV: {
+                title: "Unmanned Surface Vehicles (USV)",
+                icon: "fa-solid fa-anchor",
+                tagline: "Deep marinization and thermal management.",
+                details: "Total sealing and potting of critical electronics. We mass-produce water-presence sensors, heavy-duty circulation pumps for SatCom cooling, and waterproof actuators for thrust control in highly corrosive environments.",
+                features: ["Saltwater Anti-Corrosion", "SatCom Thermal Pumps", "Hermetic Potting"]
+            },
+            UUV: {
+                title: "Unmanned Underwater Vehicles (UUV/AUV)",
+                icon: "fa-solid fa-water",
+                tagline: "Acoustic stealth and deep-water endurance.",
+                details: "Purpose-built for subsea operations including mine countermeasures and autonomous patrols. We provide extreme-pressure hermetic potting, acoustic/inertial navigation components, and zero-emission brushless propulsion modules designed for high-pressure saltwater immersion.",
+                features: ["Deep-Water Pressure Sealing", "Inertial/Acoustic Integration", "Submersible Propulsion (<1kW)"]
+            },
+            RWS: {
+                title: "Remote Weapon Stations (RWS)",
+                icon: "fa-solid fa-shield-halved",
+                tagline: "Micrometer precision under maximum recoil.",
+                details: "Unmatched electromechanical stability for continuous target lock. We supply complex locking mechanisms, high-precision azimuth/elevation actuators, and vibration-isolated sensor boards built to MIL-STD specifications.",
+                features: ["Shock/Vibration Isolation", "High-Speed Actuation", "Laser/Optical Integration"]
+            }
+        };
+
+        const capabilitiesData = [
+            {
+                title: "Micro-Electronics & Compute",
+                icon: "fa-solid fa-microchip",
+                facility: "35+ SMT Lines • Automated AOI/ICT",
+                description: "Automated surface-mount technology placing up to 120,000 components per hour, complete with X-Ray inspection for BGA components.",
+                products: ["Mission Computers / Flight Controllers", "AI & Vision Processing Boards", "EW-Resilient RF Modules", "Electronic Speed Controllers (ESCs)"]
+            },
+            {
+                title: "Motors & Electromechanics",
+                icon: "fa-solid fa-fan",
+                facility: "Robotic Assembly • End-of-Line Testing",
+                description: "Civilian automotive mass-production scaled for defense. Delivering over 35 million motors globally with a secure, China-free magnet supply chain.",
+                products: ["Brushless DC Motors (up to 1kW)", "High-Torque Gear Motors", "Gimbal Servos & Actuators", "Thermal/Liquid Cooling Pumps"]
+            },
+            {
+                title: "Plastics, Metals & Mechanics",
+                icon: "fa-solid fa-cogs",
+                facility: "Die-casting • Precision Molding",
+                description: "Advanced structural production including 2K molding, carbon-reinforced polymers, and precision aluminum die-casting for lightweight chassis.",
+                products: ["Carbon-Reinforced Drone Frames", "IP68-Rated Watertight Enclosures", "Aluminum Heat Sinks & Mounts", "Radar/Antenna Radomes"]
+            },
+            {
+                title: "Advanced Sensor Arrays",
+                icon: "fa-solid fa-satellite-dish",
+                facility: "Cleanroom Calibration • Extreme QA",
+                description: "Contactless and ruggedized perception systems that provide continuous, reliable telemetry data regardless of mud, ice, or electronic jamming.",
+                products: ["Hall-Effect Speed/Position Sensors", "Thermal Core & Optic Integration", "Fluid Level & Pressure Sensors", "Contactless Inductive Navigation"]
+            },
+            {
+                title: "Complete System Integration",
+                icon: "fa-solid fa-box-open",
+                facility: "ISO-Certified Final Box-Build",
+                description: "End-to-end assembly of fully functional, combat-ready platforms. We translate fragmented BOMs into streamlined final integration lines for immediate frontline deployment.",
+                products: ["Complete FPV & Strike UAS", "Fully Integrated UGV Platforms", "Watertight USV/UUV Systems", "Calibrated RWS Units"]
+            },
+            {
+                title: "Testing & Certification",
+                icon: "fa-solid fa-clipboard-check",
+                facility: "MIL-STD Environmental Labs",
+                description: "Rigorous environmental, vibration, and cyber-security testing to ensure complete platforms survive extreme conditions and meet stringent NATO AQAP-2110 standards.",
+                products: ["Climatic Chamber Testing", "Vibration & Shock Validation", "Cyber-Resilience (Red Teaming)", "Full Traceability Documentation"]
+            }
+        ];
+
+        const calcConfig = {
+            UAS: { label: "UAS", max: 50000, step: 1000, default: 10000, unit: "Units/mo" },
+            UGV: { label: "UGV", max: 5000, step: 100, default: 500, unit: "Units/mo" },
+            USV: { label: "USV", max: 2000, step: 50, default: 200, unit: "Units/mo" },
+            UUV: { label: "UUV", max: 1000, step: 25, default: 100, unit: "Units/mo" },
+            RWS: { label: "RWS", max: 10000, step: 250, default: 1000, unit: "Units/mo" }
+        };
+
+        const induxValuesData = [
+            { id: 1, title: 'OEM IP Shielding', content: 'Acting as the Master Licensee. We protect the OEM’s core intellectual property while navigating complex Western jurisdictions and negotiations.' },
+            { id: 2, title: 'Compliance Translation', content: 'Upgrading raw combat designs to meet stringent AQAP-2110, CE, and local defense procurement standards without slowing down frontline iteration.' },
+            { id: 3, title: 'BOM Cleansing ("China-Out")', content: 'Systematically replacing high-risk components with trusted, traceable Western alternatives to satisfy NATO procurement security rules.' },
+            { id: 4, title: 'The "Procurement-Ready" Package', content: 'Creating a standardized, frozen production baseline. This package is completely agnostic and can be plugged into any compliant Western factory.' }
+        ];
+
+        const emsValuesData = [
+            { id: 1, title: 'Capital-Intensive Infrastructure', content: 'Access to clean rooms, advanced Surface-Mount Technology (SMT) lines, robotic assembly, and environmental testing chambers.' },
+            { id: 2, title: 'ISO-Certified Floor Space', content: 'Utilization of established quality management systems (ISO9001/AS9100) and trained, security-cleared local workforces.' },
+            { id: 3, title: 'Procurement Leverage', content: 'Deep purchasing power for standard raw materials, passives, and non-critical components to drive down bulk manufacturing costs.' },
+            { id: 4, title: 'Volume Scaling', content: 'The sheer physical capacity to rapidly scale output from hundreds to tens of thousands of units per month on demand.' }
+        ];
+
+        const emsPartnersData = [
+            {
+                id: 'A', name: 'EMS Partner A',
+                factories: ['Norway', 'Poland', 'Lithuania', 'Malaysia']
+            },
+            {
+                id: 'B', name: 'EMS Partner B',
+                factories: ['Sweden', 'Czech Republic', 'Germany']
+            },
+            {
+                id: 'C', name: 'EMS Partner C',
+                factories: ['England', 'Ukraine']
+            },
+            {
+                id: 'D', name: 'EMS Partner D',
+                factories: ['Norway', 'Denmark', 'Sweden']
+            }
+        ];
+        
+        const allCountries = ['Ukraine', 'Norway', 'Poland', 'Sweden', 'Germany', 'England', 'Czech Republic', 'Lithuania', 'Denmark', 'Malaysia'];
+
+        // --- Main App Component ---
+        function App() {
+            // State: Domain Selector & Calculator
+            const [activeDomain, setActiveDomain] = useState('UAS');
+            const [calcType, setCalcType] = useState('UAS');
+            const [scaleValue, setScaleValue] = useState(calcConfig.UAS.default);
+            
+            // State: Export Licenses
+            const [exportLicenses, setExportLicenses] = useState(
+                allCountries.reduce((acc, c) => ({ ...acc, [c]: ['Ukraine', 'Norway', 'Poland', 'Sweden', 'Germany', 'England'].includes(c) }), {})
+            );
+
+            // State: Value Accordions
+            const [activeInduxValue, setActiveInduxValue] = useState(1);
+            const [activeEmsValue, setActiveEmsValue] = useState(1);
+
+            // State: AI Engine
+            const [aiSystemType, setAiSystemType] = useState(domainsData.UAS.title);
+            const [aiBottleneck, setAiBottleneck] = useState('');
+            const [aiOutput, setAiOutput] = useState(null);
+            const [isAiLoading, setIsAiLoading] = useState(false);
+
+            // Chart Ref
+            const chartRef = useRef(null);
+            const chartInstanceRef = useRef(null);
+
+            // Chart Initialization
+            useEffect(() => {
+                if (chartInstanceRef.current) {
+                    chartInstanceRef.current.destroy();
+                }
+                
+                Chart.defaults.font.family = "'Inter', sans-serif";
+                Chart.defaults.color = '#94a3b8'; // slate-400
+
+                const ctx = chartRef.current.getContext('2d');
+                chartInstanceRef.current = new Chart(ctx, {
+                    type: 'radar',
+                    data: {
+                        labels: ['Combat Agility', 'NATO QA', 'Mass Scalability', 'Supply Security', 'Frontline Feedback'],
+                        datasets: [
+                            {
+                                label: 'Ukrainian OEMs',
+                                data: [95, 30, 40, 35, 100],
+                                backgroundColor: 'rgba(16, 185, 129, 0.2)', // Emerald
+                                borderColor: 'rgba(16, 185, 129, 1)',
+                                pointBackgroundColor: 'rgba(16, 185, 129, 1)',
+                                borderWidth: 2,
+                            },
+                            {
+                                label: 'Western Primes',
+                                data: [30, 95, 95, 85, 20],
+                                backgroundColor: 'rgba(71, 85, 105, 0.3)', // Slate
+                                borderColor: 'rgba(100, 116, 139, 1)',
+                                pointBackgroundColor: 'rgba(100, 116, 139, 1)',
+                                borderWidth: 2,
+                            },
+                            {
+                                label: 'With INDUX',
+                                data: [85, 90, 85, 90, 90],
+                                backgroundColor: 'rgba(6, 182, 212, 0.3)', // Cyan
+                                borderColor: 'rgba(6, 182, 212, 1)',
+                                pointBackgroundColor: 'rgba(6, 182, 212, 1)',
+                                borderWidth: 3,
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            r: {
+                                angleLines: { color: 'rgba(71, 85, 105, 0.5)' },
+                                grid: { color: 'rgba(71, 85, 105, 0.5)' },
+                                pointLabels: { font: { size: 12, weight: '600' }, color: '#cbd5e1' },
+                                ticks: { display: false, min: 0, max: 100 }
+                            }
+                        },
+                        plugins: {
+                            legend: { position: 'bottom', labels: { usePointStyle: true, padding: 20, color: '#e2e8f0' } },
+                            tooltip: { backgroundColor: 'rgba(15, 23, 42, 0.95)', titleColor: '#fff', bodyColor: '#cbd5e1', padding: 12, cornerRadius: 8, borderColor: '#334155', borderWidth: 1 }
+                        }
+                    }
+                });
+
+                return () => {
+                    if (chartInstanceRef.current) chartInstanceRef.current.destroy();
+                };
+            }, []);
+
+            // Helper: Calculator Metrics
+            const getScaleMetrics = (val, type) => {
+                let phase = "Phase 1: Prototyping & LRIP";
+                let color = "text-cyan-400";
+                let metric2Label, metric2Value, facilityLabel;
+
+                // Dynamically calculate lines so that max volume equals approx 24 active lines
+                let lines = Math.max(1, Math.ceil((val / calcConfig[type].max) * 24));
+
+                if (type === 'UAS' || type === 'RWS') {
+                    facilityLabel = "Dedicated Assembly Lines";
+                } else {
+                    facilityLabel = "Heavy Assembly Bays";
+                }
+                
+                // Assembly Floor Space applied to ALL categories
+                let spacePerLine = (type === 'UAS' || type === 'RWS') ? 2500 : 4500;
+                metric2Label = "Assembly Floor Space";
+                metric2Value = `${(lines * spacePerLine).toLocaleString()} sq.m`;
+
+                if (val > (calcConfig[type].max * 0.2)) { phase = "Phase 2: Volume Ramping"; color = "text-blue-400"; }
+                if (val > (calcConfig[type].max * 0.6)) { phase = "Phase 3: War Economy"; color = "text-emerald-400"; }
+
+                return { lines, metric2Label, metric2Value, facilityLabel, phase, color };
+            };
+
+            const metrics = getScaleMetrics(scaleValue, calcType);
+            
+            // Routing Algorithm: Prioritize Ukraine -> Norway -> Others based on active licenses
+            const availableFactories = [];
+            emsPartnersData.forEach(p => {
+                p.factories.forEach(f => {
+                    if (exportLicenses[f]) availableFactories.push({ partnerId: p.id, country: f });
+                });
+            });
+
+            availableFactories.sort((a, b) => {
+                const rank = (c) => c === 'Ukraine' ? 1 : c === 'Norway' ? 2 : 3;
+                if (rank(a.country) !== rank(b.country)) return rank(a.country) - rank(b.country);
+                return a.country.localeCompare(b.country); 
+            });
+
+            const factoryAllocations = {};
+            let remainingLines = metrics.lines;
+            const MAX_LINES_PER_FACTORY = 4; // Assume a single factory can hold multiple lines
+
+            if (availableFactories.length > 0 && remainingLines > 0) {
+                 // 1. Fill sequentially to honor priority (up to max per factory)
+                 for (const f of availableFactories) {
+                      const key = `${f.partnerId}_${f.country}`;
+                      const alloc = Math.min(remainingLines, MAX_LINES_PER_FACTORY);
+                      if (alloc > 0) {
+                          factoryAllocations[key] = alloc;
+                          remainingLines -= alloc;
+                      }
+                 }
+                 // 2. If lines still remain, distribute round-robin to active ones
+                 let idx = 0;
+                 while(remainingLines > 0 && availableFactories.length > 0) {
+                      const f = availableFactories[idx % availableFactories.length];
+                      const key = `${f.partnerId}_${f.country}`;
+                      factoryAllocations[key]++;
+                      remainingLines--;
+                      idx++;
+                 }
+            }
+
+            // Handler: API Engine
+            const handleGenerateStrategy = async () => {
+                if (!aiBottleneck.trim()) {
+                    setAiOutput('<div class="text-emerald-400 bg-emerald-900/20 p-4 rounded-xl border border-emerald-800/50">Please describe your bottleneck or BOM issues in the input field first.</div>');
+                    return;
+                }
+
+                setIsAiLoading(true);
+                setAiOutput(null);
+
+                const apiKey = ""; // Canvas automatically provides this
+                const prompt = `You are a high-level defense industrialization consultant working for INDUX. INDUX helps Ukrainian drone OEMs scale production in NATO countries by finding Tier-1 manufacturing partners, cleansing their BOMs of restricted parts, and ensuring AQAP/AS9100 compliance to unlock Western defense capital.
+                
+                The user is attempting to scale a: ${aiSystemType}.
+                They report this bottleneck/BOM issue: "${aiBottleneck}".
+                
+                Write a concise, 3-step action plan (max 150 words total) on how INDUX will solve this specific problem, secure their supply chain, and scale their production. Use a professional, highly encouraging, and defense-oriented tone. 
+                Format strictly with standard HTML tags (<b>, <ul>, <li class="mb-3">, <p>) for direct injection into a web UI. DO NOT use markdown asterisks or backticks.`;
+
+                try {
+                    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+                    const payload = {
+                        contents: [{ parts: [{ text: prompt }] }]
+                    };
+
+                    // Implement retry logic
+                    const fetchWithRetry = async (url, options, retries = 3, delay = 1000) => {
+                        try {
+                            const response = await fetch(url, options);
+                            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                            return await response.json();
+                        } catch (error) {
+                            if (retries === 0) throw error;
+                            await new Promise(resolve => setTimeout(resolve, delay));
+                            return fetchWithRetry(url, options, retries - 1, delay * 2);
+                        }
+                    };
+
+                    const data = await fetchWithRetry(url, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+
+                    const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+                    if (text) {
+                        setAiOutput(text.replace(/```html|```/g, '').trim());
+                    } else {
+                        throw new Error("Invalid API response format");
+                    }
+                } catch (error) {
+                    console.error("API Error:", error);
+                    setAiOutput('<div class="text-rose-400 bg-rose-900/20 p-4 rounded-xl border border-rose-800/50">Error connecting to the INDUX API. Ensure your API environment is correctly configured or try again later.</div>');
+                } finally {
+                    setIsAiLoading(false);
+                }
+            };
+
+            return (
+                <div className="min-h-screen bg-slate-950 text-slate-300 font-sans selection:bg-cyan-900 selection:text-cyan-50">
+                    
+                    {/* NAVIGATION */}
+                    <nav className="fixed w-full bg-slate-950/80 backdrop-blur-md border-b border-slate-800 z-50">
+                        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                            <div className="flex justify-between h-20 items-center">
+                                <div className="flex-shrink-0 font-extrabold text-3xl tracking-tighter text-white">
+                                    INDUX<span className="text-cyan-500">.</span>
+                                </div>
+                                <div className="hidden lg:flex space-x-8">
+                                    <a href="#paradigm" className="text-sm font-medium text-slate-300 hover:text-cyan-400 transition">The Paradigm</a>
+                                    <a href="#architecture" className="text-sm font-medium text-slate-300 hover:text-cyan-400 transition">Architecture</a>
+                                    <a href="#value" className="text-sm font-medium text-slate-300 hover:text-cyan-400 transition">Decoupled Value</a>
+                                    <a href="#ecosystem" className="text-sm font-medium text-slate-300 hover:text-cyan-400 transition">Ecosystem</a>
+                                </div>
+                                <div>
+                                    <a href="#ai-engine" className="inline-flex items-center justify-center px-5 py-2.5 border border-transparent text-sm font-bold rounded-full text-slate-950 bg-cyan-500 hover:bg-cyan-400 transition shadow-[0_0_15px_rgba(6,182,212,0.4)]">
+                                        <i className="fa-solid fa-bolt mr-2"></i>AI Strategy Engine
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </nav>
+
+                    {/* HERO SECTION */}
+                    <header className="relative overflow-hidden border-b border-slate-800 bg-slate-900 pt-32 pb-24 px-6 min-h-[90vh] flex flex-col justify-center">
+                        <div className="absolute inset-0 z-0 opacity-20 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-cyan-900 via-slate-950 to-slate-950"></div>
+                        <div className="max-w-7xl mx-auto relative z-10 w-full">
+                            <div className="inline-flex items-center space-x-2 bg-slate-800/50 border border-slate-700 rounded-full px-4 py-1.5 mb-8 shadow-sm">
+                                <div className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse"></div>
+                                <span className="text-xs font-semibold tracking-wider text-cyan-400 uppercase">Tier 1 Industrial Integrator</span>
+                            </div>
+                            <h1 className="text-5xl md:text-7xl lg:text-8xl font-bold text-white tracking-tight mb-6 leading-tight">
+                                Scale Your Advantage. <br />
+                                <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-emerald-400">
+                                    Industrialize Your Innovation.
+                                </span>
+                            </h1>
+                            <p className="text-xl md:text-2xl text-slate-400 max-w-4xl mb-12 leading-relaxed font-light">
+                                INDUX is the <span className="font-semibold text-white">Industrialization Engine</span>. We translate battle-proven unmanned systems from hyper-fast innovation cycles into certified, procurement-ready production lines in Western facilities. Bridging combat agility with industrial mass.
+                            </p>
+                            
+                            {/* Dashboard Stats */}
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-8">
+                                {[
+                                    { label: "Dedicated Experts", value: "6,000+", icon: "fa-solid fa-users" },
+                                    { label: "Global Facilities", value: "20+", icon: "fa-solid fa-globe" },
+                                    { label: "High-Speed SMT Lines", value: "35+", icon: "fa-solid fa-layer-group" },
+                                    { label: "Advanced R&D Centers", value: "10+", icon: "fa-solid fa-microscope" },
+                                ].map((stat, idx) => (
+                                    <div key={idx} className="bg-slate-900/80 border border-slate-800 p-6 rounded-2xl backdrop-blur-sm hover:border-cyan-500/30 transition duration-300">
+                                        <div className="flex items-center space-x-3 mb-2">
+                                            <i className={`${stat.icon} text-cyan-500`}></i>
+                                            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">{stat.label}</span>
+                                        </div>
+                                        <div className="text-3xl font-bold text-white">{stat.value}</div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </header>
+
+                    {/* THE PARADIGM (Speed vs Scale) */}
+                    <section id="paradigm" className="py-24 border-b border-slate-800 bg-slate-950 relative">
+                        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                            <div className="mb-16 max-w-3xl">
+                                <h2 className="text-sm font-bold tracking-widest text-cyan-400 uppercase mb-3">01. The Bottleneck</h2>
+                                <h3 className="text-4xl font-bold text-white mb-6 tracking-tight">The Speed vs. Scale Gap</h3>
+                                <p className="text-lg text-slate-400 leading-relaxed">
+                                    The defense market is at a historic turning point. Ukrainian OEMs possess unmatched combat-iteration speed but lack scalable NATO compliance. Western Contract Manufacturers possess deep scaling capabilities but cannot absorb the risk of volatile supply chains and uncertified IP. INDUX resolves this asymmetry.
+                                </p>
+                            </div>
+                            
+                            <div className="flex flex-col lg:flex-row items-center gap-12">
+                                <div className="w-full lg:w-1/2">
+                                    <div className="relative w-full h-[400px] bg-slate-900/50 rounded-3xl p-6 border border-slate-800 shadow-2xl overflow-hidden">
+                                        <div className="absolute top-0 right-0 w-32 h-32 bg-cyan-500/10 rounded-full blur-3xl -mr-10 -mt-10"></div>
+                                        <canvas ref={chartRef}></canvas>
+                                    </div>
+                                </div>
+                                <div className="w-full lg:w-1/2 space-y-6">
+                                    <div className="p-6 bg-slate-900 rounded-2xl border border-slate-800 hover:border-emerald-500/50 transition">
+                                        <h4 className="font-bold text-white text-xl mb-2 flex items-center gap-3">
+                                            <i className="fa-solid fa-rocket text-emerald-500"></i> Ukrainian OEMs
+                                        </h4>
+                                        <p className="text-slate-400 leading-relaxed">Extreme combat agility and rapid iteration (weeks, not years), but heavily constrained by wartime supply chain risks, physical threats, and a lack of AQAP documentation for massive Western procurement.</p>
+                                    </div>
+                                    <div className="p-6 bg-slate-900 rounded-2xl border border-slate-800 hover:border-slate-500/50 transition">
+                                        <h4 className="font-bold text-white text-xl mb-2 flex items-center gap-3">
+                                            <i className="fa-solid fa-industry text-slate-400"></i> Western EMS / Primes
+                                        </h4>
+                                        <p className="text-slate-400 leading-relaxed">High manufacturing scale, rigorous quality control (ISO/AS9100), and access to capital, but operationally too rigid to handle weekly changes directly from the frontline.</p>
+                                    </div>
+                                    <div className="p-8 bg-gradient-to-br from-cyan-900/40 to-slate-900 rounded-2xl border border-cyan-500/30 shadow-[0_0_30px_rgba(6,182,212,0.1)] relative overflow-hidden">
+                                        <div className="absolute top-0 right-0 p-4 opacity-10 text-cyan-400 text-6xl"><i className="fa-solid fa-bridge"></i></div>
+                                        <h4 className="font-bold text-cyan-400 text-xl mb-2 relative z-10 flex items-center gap-2">
+                                            <i className="fa-solid fa-bolt"></i> The INDUX Bridge
+                                        </h4>
+                                        <p className="text-slate-300 leading-relaxed relative z-10">We act as the compliance and industrialization layer. We absorb the risk, lock the IP, translate agile designs into rigorous manufacturing specifications, and deliver factory-ready packages.</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    {/* CAPABILITIES GRID */}
+                    <section className="py-24 px-6 bg-slate-900 border-b border-slate-800">
+                        <div className="max-w-7xl mx-auto">
+                            <div className="mb-16 max-w-3xl">
+                                <h2 className="text-sm font-bold tracking-widest text-cyan-400 uppercase mb-3">02. Industrial Capacities</h2>
+                                <h3 className="text-4xl font-bold text-white mb-6 tracking-tight">Full-Spectrum Manufacturing Lines</h3>
+                                <p className="text-lg text-slate-400 leading-relaxed">
+                                    From sophisticated microcomputers to multi-kilowatt electric motors, and full system integration. We replace fragmented, high-risk supply chains with a unified, vertically integrated European industrial base.
+                                </p>
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                {capabilitiesData.map((cap, idx) => (
+                                    <div key={idx} className="bg-slate-950 border border-slate-800 rounded-3xl p-8 hover:border-cyan-500/50 hover:shadow-[0_0_20px_rgba(6,182,212,0.1)] transition-all group flex flex-col">
+                                        <div className="mb-6 transform group-hover:-translate-y-1 transition-transform">
+                                            <div className="w-14 h-14 rounded-2xl bg-slate-900 flex items-center justify-center">
+                                                <i className={`${cap.icon} text-cyan-400 text-2xl`}></i>
+                                            </div>
+                                        </div>
+                                        <h3 className="text-xl font-bold text-white mb-2">{cap.title}</h3>
+                                        <div className="text-xs font-semibold text-cyan-500 uppercase tracking-wider mb-4 border-b border-slate-800 pb-3">
+                                            {cap.facility}
+                                        </div>
+                                        <p className="text-sm text-slate-400 mb-6 flex-grow">
+                                            {cap.description}
+                                        </p>
+                                        <div className="mt-auto">
+                                            <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">Key Output</h4>
+                                            <ul className="space-y-2">
+                                                {cap.products.map((product, pIdx) => (
+                                                    <li key={pIdx} className="flex items-start text-sm text-slate-300">
+                                                        <i className="fa-solid fa-check text-emerald-500 mr-2 mt-0.5"></i>
+                                                        <span>{product}</span>
+                                                    </li>
+                                                ))}
+                                            </ul>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </section>
+
+                    {/* DOMAIN SELECTOR */}
+                    <section className="py-24 px-6 bg-slate-950 border-b border-slate-800">
+                        <div className="max-w-7xl mx-auto">
+                            <div className="mb-12 max-w-3xl">
+                                <h2 className="text-sm font-bold tracking-widest text-cyan-400 uppercase mb-3">03. Domain-Specific Integration</h2>
+                                <h3 className="text-4xl font-bold text-white mb-6 tracking-tight">Cross-Domain Dominance</h3>
+                            </div>
+                            <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+                                <div className="lg:col-span-4 flex flex-col space-y-3">
+                                    {Object.keys(domainsData).map((key) => (
+                                        <button
+                                            key={key}
+                                            onClick={() => setActiveDomain(key)}
+                                            className={`flex items-center p-4 rounded-2xl border text-left transition-all ${
+                                                activeDomain === key 
+                                                ? 'bg-slate-900 border-cyan-500 shadow-[0_0_15px_rgba(6,182,212,0.15)]' 
+                                                : 'bg-slate-900/40 border-slate-800 hover:border-slate-600'
+                                            }`}
+                                        >
+                                            <div className={`p-3 rounded-xl flex items-center justify-center w-12 h-12 transition-colors ${activeDomain === key ? 'bg-cyan-950/50' : 'bg-slate-800'}`}>
+                                                <i className={`${domainsData[key].icon} text-cyan-400 text-xl`}></i>
+                                            </div>
+                                            <div className="ml-4">
+                                                <div className={`font-bold transition-colors ${activeDomain === key ? 'text-white' : 'text-slate-400'}`}>{key}</div>
+                                                <div className="text-xs text-slate-500">{domainsData[key].title}</div>
+                                            </div>
+                                        </button>
+                                    ))}
+                                </div>
+
+                                <div className="lg:col-span-8">
+                                    <div className="bg-slate-900 border border-slate-800 rounded-3xl p-8 md:p-12 min-h-[400px] flex flex-col justify-center relative overflow-hidden shadow-2xl">
+                                        <div className="absolute top-0 right-0 w-64 h-64 bg-cyan-500/10 blur-3xl rounded-full translate-x-1/2 -translate-y-1/2"></div>
+                                        
+                                        <h3 className="text-3xl font-bold text-white mb-2">{domainsData[activeDomain].title}</h3>
+                                        <p className="text-cyan-400 font-medium mb-6">{domainsData[activeDomain].tagline}</p>
+                                        <p className="text-slate-300 text-lg mb-8 leading-relaxed">
+                                            {domainsData[activeDomain].details}
+                                        </p>
+                                        
+                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-auto">
+                                            {domainsData[activeDomain].features.map((feat, i) => (
+                                                <div key={i} className="bg-slate-950 border border-slate-800 p-4 rounded-xl flex items-center">
+                                                    <i className="fa-solid fa-bolt text-emerald-500 mr-3 flex-shrink-0"></i>
+                                                    <span className="text-sm font-medium text-slate-300">{feat}</span>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    {/* ARCHITECTURE (4 Pillars) */}
+                    <section id="architecture" className="py-24 bg-slate-900 border-b border-slate-800">
+                        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                            <div className="mb-16 text-center max-w-3xl mx-auto">
+                                <h2 className="text-sm font-bold tracking-widest text-cyan-400 uppercase mb-3">04. Execution Architecture</h2>
+                                <h3 className="text-4xl font-bold text-white mb-6 tracking-tight">Our Capabilities Architecture</h3>
+                                <p className="text-lg text-slate-400 leading-relaxed">A comprehensive framework systematically applied across the entire ecosystem to de-risk, translate, and scale autonomous defense technology.</p>
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                                {[
+                                    { step: '1', name: 'Foundation', tag: 'Assessment & Setup', icon: 'fa-clipboard-check', color: 'cyan', 
+                                      items: [
+                                          { title: "Partner analysis & due diligence:", desc: "Rigorous vetting of technical viability and sanction compliance." },
+                                          { title: "IP Protection:", desc: "Clean chain-of-title and master licensee structures." },
+                                          { title: "Manufacturing agreements:", desc: "Defensible joint ventures that secure capital." }
+                                      ] 
+                                    },
+                                    { step: '2', name: 'Translation', tag: 'Engineering & Rules', icon: 'fa-language', color: 'emerald', 
+                                      items: [
+                                          { title: "UXV co-engineering:", desc: "Adapting prototypes for scalable Western assembly." },
+                                          { title: "Product & component compliance:", desc: "Meeting NATO and European regulatory requirements." },
+                                          { title: "dfx-analysis:", desc: "Design for Excellence optimization for trusted-BOMs." }
+                                      ] 
+                                    },
+                                    { step: '3', name: 'Industrialization', tag: 'Production & Scale', icon: 'fa-industry', color: 'cyan', 
+                                      items: [
+                                          { title: "Robotic automation:", desc: "Integrating systems with advanced high-volume assembly lines." },
+                                          { title: "Manufacturing scaling:", desc: "Translating prototypes into mass output models." },
+                                          { title: "Quality & testing:", desc: "Ensuring comprehensive NATO-standard and AQAP adherence." }
+                                      ] 
+                                    },
+                                    { step: '4', name: 'Operations', tag: 'Lifecycle & Supply', icon: 'fa-recycle', color: 'emerald', 
+                                      items: [
+                                          { title: "Engineering change management:", desc: "Batching combat updates into actionable ECOs." },
+                                          { title: "Supply chain & logistics:", desc: "Managing secure, China-free procurement pipelines." },
+                                          { title: "Field testing and iterations:", desc: "Direct feedback loops from active combat zones." }
+                                      ] 
+                                    }
+                                ].map((pillar, idx) => (
+                                    <div key={idx} className={`bg-slate-950 border border-slate-800 p-8 rounded-3xl hover:border-${pillar.color}-500/50 transition-all duration-300 group`}>
+                                        <div className="w-12 h-12 rounded-2xl bg-slate-900 flex items-center justify-center text-2xl mb-6 group-hover:-translate-y-1 transition-transform text-slate-300">
+                                            <i className={`fa-solid ${pillar.icon}`}></i>
+                                        </div>
+                                        <h4 className="text-xl font-bold text-white mb-2">{pillar.step}. {pillar.name}</h4>
+                                        <span className={`inline-block px-3 py-1 bg-${pillar.color}-500/10 text-${pillar.color}-400 text-[10px] uppercase tracking-wider font-bold rounded-full mb-6`}>{pillar.tag}</span>
+                                        <ul className="space-y-4">
+                                            {pillar.items.map((item, i) => (
+                                                <li key={i} className="text-sm text-slate-300 flex items-start">
+                                                    <i className={`fa-solid fa-chevron-right text-${pillar.color}-500 text-[10px] mr-3 mt-1 shrink-0`}></i>
+                                                    <span>
+                                                        <strong className="text-white block mb-0.5">{item.title}</strong>
+                                                        <span className="text-slate-400">{item.desc}</span>
+                                                    </span>
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </section>
+
+                    {/* DECOUPLED VALUE */}
+                    <section id="value" className="py-24 bg-slate-950 border-b border-slate-800">
+                        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                            <div className="mb-16 max-w-4xl">
+                                <h2 className="text-sm font-bold tracking-widest text-cyan-400 uppercase mb-3">05. Strategic Core</h2>
+                                <h3 className="text-4xl font-bold text-white mb-6 tracking-tight">The Decoupled Value Proposition</h3>
+                                <p className="text-lg text-slate-400 leading-relaxed">
+                                    Traditional defense procurement merges engineering, compliance, and mass production into a single, slow-moving prime contractor. <strong>INDUX decouples these functions.</strong> We separate the <i>complexity of compliance</i> from the <i>commodity of assembly</i>.
+                                </p>
+                            </div>
+
+                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+                                {/* INDUX Card */}
+                                <div className="bg-slate-900 rounded-3xl border border-slate-800 overflow-hidden flex flex-col shadow-xl">
+                                    <div className="bg-gradient-to-r from-cyan-900/50 to-slate-800 p-8 border-b border-slate-700">
+                                        <h3 className="text-2xl font-bold text-white flex items-center gap-3"><i className="fa-solid fa-microchip text-cyan-500 text-3xl"></i> INDUX Value</h3>
+                                        <p className="text-cyan-400 text-xs mt-3 font-bold tracking-widest uppercase">The Industrialization API</p>
+                                        <p className="text-slate-300 text-sm mt-2">Absorbing friction, legal complexity, and supply chain volatility.</p>
+                                    </div>
+                                    <div className="p-6 space-y-4 flex-grow">
+                                        {induxValuesData.map(item => (
+                                            <div 
+                                                key={item.id} 
+                                                className={`interactive-node border p-5 rounded-2xl ${activeInduxValue === item.id ? 'bg-slate-950 border-cyan-500 shadow-[0_0_15px_rgba(6,182,212,0.1)] border-l-4' : 'bg-slate-800 border-slate-700'}`}
+                                                onClick={() => setActiveInduxValue(item.id)}
+                                            >
+                                                <h4 className="font-semibold text-white flex justify-between items-center text-lg">
+                                                    {item.title} 
+                                                    <i className={`fa-solid ${activeInduxValue === item.id ? 'fa-chevron-up text-cyan-400' : 'fa-chevron-down text-slate-500'}`}></i>
+                                                </h4>
+                                                {activeInduxValue === item.id && (
+                                                    <p className="text-sm text-slate-400 mt-3 pt-3 border-t border-slate-800/50 leading-relaxed">{item.content}</p>
+                                                )}
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                {/* EMS Card */}
+                                <div className="bg-slate-900 rounded-3xl border border-slate-800 overflow-hidden flex flex-col shadow-xl">
+                                    <div className="bg-gradient-to-r from-emerald-900/50 to-slate-800 p-8 border-b border-slate-700">
+                                        <h3 className="text-2xl font-bold text-white flex items-center gap-3"><i className="fa-solid fa-industry text-emerald-400 text-3xl"></i> EMS Partner Value</h3>
+                                        <p className="text-emerald-300 text-xs mt-3 font-bold tracking-widest uppercase">The Physical Engine</p>
+                                        <p className="text-slate-300 text-sm mt-2">Providing physical infrastructure and heavy capital for mass production.</p>
+                                    </div>
+                                    <div className="p-6 space-y-4 flex-grow">
+                                        {emsValuesData.map(item => (
+                                            <div 
+                                                key={item.id} 
+                                                className={`interactive-node border p-5 rounded-2xl ${activeEmsValue === item.id ? 'bg-slate-950 border-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.1)] border-l-4' : 'bg-slate-800 border-slate-700'}`}
+                                                onClick={() => setActiveEmsValue(item.id)}
+                                            >
+                                                <h4 className="font-semibold text-white flex justify-between items-center text-lg">
+                                                    {item.title} 
+                                                    <i className={`fa-solid ${activeEmsValue === item.id ? 'fa-chevron-up text-emerald-400' : 'fa-chevron-down text-slate-500'}`}></i>
+                                                </h4>
+                                                {activeEmsValue === item.id && (
+                                                    <p className="text-sm text-slate-400 mt-3 pt-3 border-t border-slate-800/50 leading-relaxed">{item.content}</p>
+                                                )}
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    {/* DUAL HUB STRATEGY */}
+                    <section id="dualhub" className="py-24 bg-slate-900 border-b border-slate-800">
+                        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                            <div className="mb-16 text-center max-w-3xl mx-auto">
+                                <h2 className="text-sm font-bold tracking-widest text-cyan-400 uppercase mb-3">06. Geographic Strategy</h2>
+                                <h3 className="text-4xl font-bold text-white mb-4 tracking-tight">The Dual-Hub Strategy</h3>
+                                <p className="text-lg text-slate-400 leading-relaxed">Balancing combat-speed innovation with NATO-grade production reliability through geographically and operationally distinct hubs connected by our translation layer.</p>
+                            </div>
+
+                            <div className="flex flex-col md:flex-row items-stretch justify-center gap-6 relative max-w-6xl mx-auto">
+                                {/* Line connector for desktop */}
+                                <div className="hidden md:block absolute top-1/2 left-0 w-full h-1 bg-slate-800 -translate-y-1/2 z-0"></div>
+
+                                {/* Ukraine Hub */}
+                                <div className="flex-1 bg-slate-950 border border-slate-800 p-8 rounded-3xl relative z-10 shadow-2xl">
+                                    <div className="inline-block px-3 py-1 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[10px] uppercase tracking-widest font-bold rounded-full mb-5">UKR Hub</div>
+                                    <h3 className="text-2xl font-bold text-white mb-2">Kyiv / Lviv</h3>
+                                    <p className="text-slate-400 text-sm mb-6 leading-relaxed border-b border-slate-800 pb-4">The frontline innovation engine. Focused on combat agility, rapid data acquisition, and core technology development.</p>
+                                    <div className="space-y-4">
+                                        <div className="flex items-start text-sm text-slate-300"><i className="fa-solid fa-check text-emerald-500 mr-3 mt-1"></i> <div><strong className="text-white">Field testing and iterations:</strong> Direct feedback loops from active combat zones.</div></div>
+                                        <div className="flex items-start text-sm text-slate-300"><i className="fa-solid fa-check text-emerald-500 mr-3 mt-1"></i> <div><strong className="text-white">UXV co-engineering:</strong> Working alongside Ukrainian engineers to shape exportable systems.</div></div>
+                                        <div className="flex items-start text-sm text-slate-300"><i className="fa-solid fa-check text-emerald-500 mr-3 mt-1"></i> <div><strong className="text-white">Baseline "Freezing":</strong> Capturing hyper-fast changes to establish a stable starting point.</div></div>
+                                    </div>
+                                </div>
+
+                                {/* INDUX Bridge */}
+                                <div className="flex-none flex flex-col items-center justify-center z-20 w-full md:w-64 my-6 md:my-0">
+                                    <div className="bg-gradient-to-br from-cyan-500 to-cyan-600 text-slate-950 rounded-2xl p-4 shadow-[0_0_30px_rgba(6,182,212,0.3)] border-4 border-slate-950 flex items-center justify-center font-bold text-center text-sm w-24 h-24 transform rotate-45 mb-8 mx-auto hover:rotate-90 transition-transform duration-500 cursor-pointer">
+                                        <span className="-rotate-45 leading-tight text-lg">INDUX<br/>API</span>
+                                    </div>
+                                    <div className="bg-slate-800 border border-slate-700 rounded-2xl p-5 text-center w-full shadow-2xl">
+                                        <p className="text-[10px] text-cyan-400 uppercase tracking-widest mb-3 font-bold">The Translation Layer</p>
+                                        <ul className="text-xs text-slate-300 space-y-2 text-left">
+                                            <li className="flex items-center gap-2"><i className="fa-solid fa-shield text-slate-500"></i> IP Protection</li>
+                                            <li className="flex items-center gap-2"><i className="fa-solid fa-magnifying-glass-chart text-slate-500"></i> dfx-analysis</li>
+                                            <li className="flex items-center gap-2"><i className="fa-solid fa-code-branch text-slate-500"></i> Change management</li>
+                                            <li className="flex items-center gap-2"><i className="fa-solid fa-file-contract text-slate-500"></i> NATO compliance</li>
+                                        </ul>
+                                    </div>
+                                </div>
+
+                                {/* Norway Hub */}
+                                <div className="flex-1 bg-slate-950 border border-slate-800 p-8 rounded-3xl relative z-10 shadow-2xl">
+                                    <div className="inline-block px-3 py-1 bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 text-[10px] uppercase tracking-widest font-bold rounded-full mb-5">NOR Hub</div>
+                                    <h3 className="text-2xl font-bold text-white mb-2">Oslo / Kongsberg</h3>
+                                    <p className="text-slate-400 text-sm mb-6 leading-relaxed border-b border-slate-800 pb-4">The execution and industrial backbone. Focused on mass output, rigorous compliance, and systemic reliability.</p>
+                                    <div className="space-y-4">
+                                        <div className="flex items-start text-sm text-slate-300"><i className="fa-solid fa-check text-cyan-400 mr-3 mt-1"></i> <div><strong className="text-white">Manufacturing scaling:</strong> Integrating systems with advanced Robotic automation lines.</div></div>
+                                        <div className="flex items-start text-sm text-slate-300"><i className="fa-solid fa-check text-cyan-400 mr-3 mt-1"></i> <div><strong className="text-white">Quality & testing:</strong> Ensuring comprehensive NATO-standard and AQAP adherence.</div></div>
+                                        <div className="flex items-start text-sm text-slate-300"><i className="fa-solid fa-check text-cyan-400 mr-3 mt-1"></i> <div><strong className="text-white">Supply chain & logistics:</strong> Managing secure, China-free procurement pipelines.</div></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    {/* CAPACITY CALCULATOR / INDUSTRIAL PLANNER */}
+                    <section className="py-16 px-6 bg-slate-950 border-b border-slate-800">
+                        <div className="max-w-7xl mx-auto">
+                            <div className="text-center mb-10">
+                                <h2 className="text-sm font-bold tracking-widest text-cyan-400 uppercase mb-2">07. Industrial Planner</h2>
+                                <h3 className="text-3xl md:text-4xl font-bold text-white mb-3 tracking-tight">Live Capacity & Routing Calculator</h3>
+                                <p className="text-slate-400 max-w-2xl mx-auto text-sm leading-relaxed">Scale your product type to calculate the required industrial architecture and watch the API dynamically route production across our European EMS base.</p>
+                            </div>
+
+                            <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 md:p-8 shadow-2xl relative overflow-hidden flex flex-col lg:flex-row gap-8 lg:gap-12 items-center">
+                                <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-cyan-500 to-transparent opacity-50"></div>
+                                
+                                {/* Left Side: Calculator Controls */}
+                                <div className="w-full lg:w-5/12 flex flex-col border-b lg:border-b-0 lg:border-r border-slate-800 pb-8 lg:pb-0 lg:pr-8">
+                                    <div className="flex flex-wrap gap-2 mb-8">
+                                        {Object.keys(calcConfig).map((key) => (
+                                            <button
+                                                key={key}
+                                                onClick={() => { setCalcType(key); setScaleValue(calcConfig[key].default); }}
+                                                className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all ${
+                                                    calcType === key 
+                                                    ? 'bg-cyan-500 text-slate-950 shadow-[0_0_15px_rgba(6,182,212,0.4)]' 
+                                                    : 'bg-slate-800 text-slate-400 hover:bg-slate-700'
+                                                }`}
+                                            >
+                                                {calcConfig[key].label}
+                                            </button>
+                                        ))}
+                                    </div>
+
+                                    <div className="mb-8">
+                                        <div className="flex justify-between items-end mb-3">
+                                            <div>
+                                                <div className="text-xs font-bold tracking-wider text-slate-500 uppercase mb-1">Target Monthly Volume</div>
+                                                <div className={`text-4xl font-bold transition-colors ${metrics.color}`}>
+                                                    {scaleValue.toLocaleString()} <span className="text-lg text-slate-500 font-medium">{calcConfig[calcType].unit}</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                        <input 
+                                            type="range" 
+                                            min={calcConfig[calcType].step} 
+                                            max={calcConfig[calcType].max} 
+                                            step={calcConfig[calcType].step} 
+                                            value={scaleValue}
+                                            onChange={(e) => setScaleValue(Number(e.target.value))}
+                                            className="w-full h-2.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-cyan-500 hover:accent-cyan-400 transition-all"
+                                        />
+                                        <div className="flex justify-between text-[10px] font-semibold text-slate-600 mt-2 uppercase tracking-wider">
+                                            <span>Initial / LRIP</span>
+                                            <span>War Economy ({calcConfig[calcType].max / 1000}k+)</span>
+                                        </div>
+                                    </div>
+
+                                    <div className="mb-8">
+                                        <div className="text-[10px] font-bold tracking-wider text-slate-500 uppercase mb-2">Export License Approvals</div>
+                                        <div className="flex flex-wrap gap-1.5">
+                                            {allCountries.map(c => (
+                                                <button 
+                                                    key={c}
+                                                    onClick={() => setExportLicenses(prev => ({...prev, [c]: !prev[c]}))}
+                                                    className={`px-2 py-1 border text-[9px] uppercase tracking-wider rounded transition-colors flex items-center gap-1 ${
+                                                        exportLicenses[c] 
+                                                        ? 'bg-emerald-950/40 border-emerald-500/50 text-emerald-400' 
+                                                        : 'bg-slate-900 border-slate-800 text-slate-600 hover:border-slate-700 hover:text-slate-400'
+                                                    }`}
+                                                >
+                                                    <i className={`fa-solid ${exportLicenses[c] ? 'fa-check' : 'fa-lock'} text-[8px]`}></i>
+                                                    {c}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    <div className="grid grid-cols-2 gap-3 pt-6 border-t border-slate-800/50">
+                                        <div>
+                                            <div className="text-slate-500 text-[10px] mb-0.5 uppercase tracking-wider font-semibold leading-tight">{metrics.facilityLabel}</div>
+                                            <div className="text-xl font-bold text-white flex items-baseline gap-1">
+                                                {metrics.lines}
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <div className="text-slate-500 text-[10px] mb-0.5 uppercase tracking-wider font-semibold leading-tight">{metrics.metric2Label}</div>
+                                            <div className="text-xl font-bold text-white">
+                                                {metrics.metric2Value}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Right Side: Dynamic Routing Visualization */}
+                                <div className="w-full lg:w-7/12 flex flex-col h-full">
+                                    <div className="flex justify-between items-center mb-4 pb-2 border-b border-slate-800">
+                                        <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Active European Nodes</span>
+                                        {availableFactories.length === 0 && <span className="text-xs text-rose-500 animate-pulse font-bold">WARNING: No Export Licenses Active</span>}
+                                    </div>
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full h-full content-start">
+                                        {/* EMS Partners Dynamic List */}
+                                        {emsPartnersData.map(partner => {
+                                            const activeFactoriesInPartner = partner.factories.filter(f => factoryAllocations[`${partner.id}_${f}`] > 0);
+                                            const partnerActive = activeFactoriesInPartner.length > 0;
+                                            
+                                            return (
+                                                <div key={partner.id} className={`p-4 rounded-xl border transition-all duration-300 ${partnerActive ? 'bg-slate-900 border-cyan-500 shadow-[0_0_15px_rgba(6,182,212,0.15)]' : 'bg-slate-900/40 border-slate-800'}`}>
+                                                    <div className="flex justify-between items-center mb-3 border-b border-slate-800/50 pb-2">
+                                                        <div className="text-xs font-bold text-white"><i className="fa-solid fa-industry text-cyan-400 mr-2 opacity-70"></i>{partner.name}</div>
+                                                        <span className={`text-[9px] font-mono px-2 py-0.5 rounded border transition-colors ${partnerActive ? 'text-emerald-400 bg-emerald-950/50 border-emerald-800' : 'text-slate-500 bg-slate-950 border-slate-800'}`}>
+                                                            {partnerActive ? 'Active' : 'Standby'}
+                                                        </span>
+                                                    </div>
+                                                    <div className="flex flex-col gap-2">
+                                                        {partner.factories.map(f => {
+                                                            const key = `${partner.id}_${f}`;
+                                                            const allocatedLines = factoryAllocations[key] || 0;
+                                                            const hasLicense = exportLicenses[f];
+                                                            const isFactoryActive = allocatedLines > 0;
+                                                            
+                                                            return (
+                                                                <div key={f} className={`px-3 py-2 rounded-lg border flex justify-between items-center transition-all duration-500 ${isFactoryActive ? 'bg-cyan-900/30 border-cyan-500/50' : 'bg-slate-950 border-slate-800'}`}>
+                                                                    <div className="flex items-center gap-2">
+                                                                        <i className={`fa-solid ${hasLicense ? 'fa-location-dot' : 'fa-lock'} text-[10px] ${isFactoryActive ? 'text-cyan-400' : 'text-slate-600'}`}></i>
+                                                                        <span className={`text-xs ${isFactoryActive ? 'text-cyan-50' : 'text-slate-500'}`}>{f}</span>
+                                                                        {!hasLicense && <span className="text-[8px] text-rose-500/70 uppercase tracking-widest ml-1 hidden lg:inline-block">Restricted</span>}
+                                                                    </div>
+                                                                    {isFactoryActive ? (
+                                                                        <div className="flex items-center gap-2">
+                                                                            <span className="text-[10px] text-cyan-400 font-mono font-semibold">{allocatedLines} L</span>
+                                                                            <div className="w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.8)] animate-pulse"></div>
+                                                                        </div>
+                                                                    ) : (
+                                                                        <div className="w-2 h-2 rounded-full bg-slate-800"></div>
+                                                                    )}
+                                                                </div>
+                                                            );
+                                                        })}
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    {/* STRATEGIC ADVANTAGES */}
+                    <section className="py-24 px-6 bg-slate-900 border-b border-slate-800">
+                        <div className="max-w-7xl mx-auto">
+                            <div className="mb-16 text-center max-w-3xl mx-auto">
+                                <h2 className="text-sm font-bold tracking-widest text-cyan-400 uppercase mb-3">08. Strategic Advantages</h2>
+                                <h3 className="text-4xl font-bold text-white mb-4 tracking-tight">The Power of Multi-Partner Routing</h3>
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                                <div className="bg-slate-950 p-8 rounded-3xl border border-slate-800 hover:border-cyan-500/50 hover:shadow-[0_0_20px_rgba(6,182,212,0.1)] transition-all duration-300">
+                                    <div className="text-3xl mb-4 text-cyan-400"><i className="fa-solid fa-scale-balanced"></i></div>
+                                    <h4 className="text-xl font-bold text-white mb-3">Elimination of Vendor Lock-In</h4>
+                                    <p className="text-sm text-slate-400 leading-relaxed">If Factory A faces component shortages, strikes, or demands higher margins, INDUX seamlessly routes the exact same production package to Factory B.</p>
+                                </div>
+                                <div className="bg-slate-950 p-8 rounded-3xl border border-slate-800 hover:border-cyan-500/50 hover:shadow-[0_0_20px_rgba(6,182,212,0.1)] transition-all duration-300">
+                                    <div className="text-3xl mb-4 text-cyan-400"><i className="fa-solid fa-sack-dollar"></i></div>
+                                    <h4 className="text-xl font-bold text-white mb-3">Forced Internal Competition</h4>
+                                    <p className="text-sm text-slate-400 leading-relaxed">By maintaining active relationships with multiple EMS providers, we force them to compete on unit price, turnaround time, and quality on behalf of the OEM.</p>
+                                </div>
+                                <div className="bg-slate-950 p-8 rounded-3xl border border-slate-800 hover:border-cyan-500/50 hover:shadow-[0_0_20px_rgba(6,182,212,0.1)] transition-all duration-300">
+                                    <div className="text-3xl mb-4 text-cyan-400"><i className="fa-solid fa-rotate"></i></div>
+                                    <h4 className="text-xl font-bold text-white mb-3">Agile & Synchronized Iteration</h4>
+                                    <p className="text-sm text-slate-400 leading-relaxed">The OEM communicates design changes to only one entity: INDUX. We translate and push the version update across all active manufacturing lines simultaneously.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    {/* ECOSYSTEM & MODELS */}
+                    <section id="ecosystem" className="py-24 px-6 bg-slate-950 border-b border-slate-800">
+                        <div className="max-w-7xl mx-auto">
+                            <div className="mb-16 text-center max-w-3xl mx-auto">
+                                <h2 className="text-sm font-bold tracking-widest text-cyan-400 uppercase mb-3">09. Partnership Ecosystem</h2>
+                                <h3 className="text-4xl font-bold text-white mb-6 tracking-tight">Structured Integration Pathways</h3>
+                                <p className="text-lg text-slate-400 leading-relaxed">We provide secure, compliant, and tailored solutions aligned to the specific risk profiles of our core partners.</p>
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-16">
+                                {/* OEM Card */}
+                                <div className="bg-slate-900 p-8 rounded-3xl border border-slate-800 hover:border-cyan-500/50 transition">
+                                    <div className="text-4xl text-emerald-500 mb-6"><i className="fa-solid fa-rocket"></i></div>
+                                    <h4 className="text-xl font-bold text-white mb-4">Ukrainian OEMs</h4>
+                                    <p className="text-slate-400 text-sm leading-relaxed mb-6">You possess battle-proven tech but face severe production ceilings and bomb risks. We provide the pathway to NATO-country mass production while safeguarding your core innovations.</p>
+                                    <ul className="text-sm text-slate-300 space-y-2 border-t border-slate-800 pt-4">
+                                        <li><i className="fa-solid fa-check text-cyan-500 mr-2"></i> IP Shielding</li>
+                                        <li><i className="fa-solid fa-check text-cyan-500 mr-2"></i> DfM Engineering</li>
+                                        <li><i className="fa-solid fa-check text-cyan-500 mr-2"></i> Production Funding Access</li>
+                                    </ul>
+                                </div>
+                                {/* EMS Card */}
+                                <div className="bg-slate-900 p-8 rounded-3xl border border-slate-800 hover:border-cyan-500/50 transition">
+                                    <div className="text-4xl text-cyan-400 mb-6"><i className="fa-solid fa-industry"></i></div>
+                                    <h4 className="text-xl font-bold text-white mb-4">Contract Mfrs (EMS)</h4>
+                                    <p className="text-slate-400 text-sm leading-relaxed mb-6">You want to enter the high-growth defense sector but require stable supply chains and rigorous compliance. We absorb the frontline chaos, delivering factory-ready packages.</p>
+                                    <ul className="text-sm text-slate-300 space-y-2 border-t border-slate-800 pt-4">
+                                        <li><i className="fa-solid fa-check text-cyan-500 mr-2"></i> Cleansed BOMs</li>
+                                        <li><i className="fa-solid fa-check text-cyan-500 mr-2"></i> Frozen Production Baselines</li>
+                                        <li><i className="fa-solid fa-check text-cyan-500 mr-2"></i> High-Volume Demand</li>
+                                    </ul>
+                                </div>
+                                {/* Capital Card */}
+                                <div className="bg-slate-900 p-8 rounded-3xl border border-slate-800 hover:border-cyan-500/50 transition">
+                                    <div className="text-4xl text-blue-400 mb-6"><i className="fa-solid fa-vault"></i></div>
+                                    <h4 className="text-xl font-bold text-white mb-4">Capital Providers</h4>
+                                    <p className="text-slate-400 text-sm leading-relaxed mb-6">You seek to deploy capital into defense but require auditable risk mitigation. INDUX performs deep due diligence and establishes the legal compliance necessary to scale securely.</p>
+                                    <ul className="text-sm text-slate-300 space-y-2 border-t border-slate-800 pt-4">
+                                        <li><i className="fa-solid fa-check text-cyan-500 mr-2"></i> NATO/AQAP Compliance</li>
+                                        <li><i className="fa-solid fa-check text-cyan-500 mr-2"></i> Sanction-Free Supply Chains</li>
+                                        <li><i className="fa-solid fa-check text-cyan-500 mr-2"></i> Scalable ROI</li>
+                                    </ul>
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-16 pt-12 border-t border-slate-800">
+                                <div>
+                                    <h2 className="text-2xl font-bold text-white mb-6">Strategic Partnership Models</h2>
+                                    <p className="text-slate-400 mb-8 text-sm leading-relaxed">We offer fully mature, risk-reducing commercial frameworks. Focus on innovation; we handle European corporate law, supply chain financing, and factory setups.</p>
+                                    <div className="space-y-4">
+                                        <div className="bg-slate-900 p-5 rounded-2xl border border-slate-800">
+                                            <h4 className="text-lg font-bold text-white mb-2">The Tier 1 Integrator Model</h4>
+                                            <p className="text-xs text-slate-400 leading-relaxed">You deliver combat-validated IP. We execute DFM, secure the supply chain against shortages, manufacture, stress-test, and deliver complete, NATO-certified systems.</p>
+                                        </div>
+                                        <div className="bg-slate-900 p-5 rounded-2xl border border-slate-800">
+                                            <h4 className="text-lg font-bold text-white mb-2">Joint Ventures (JV)</h4>
+                                            <p className="text-xs text-slate-400 leading-relaxed">Formalized partnerships where your IP meets our capital, machinery, and regulatory approvals inside secure EU jurisdictions (e.g., Luxembourg holding structures).</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div>
+                                    <h2 className="text-2xl font-bold text-white mb-6">Military-Grade Security & QA</h2>
+                                    <p className="text-slate-400 mb-8 text-sm leading-relaxed">In a hyper-connected war economy, data is ammunition. Your source code and algorithms are protected by draconian European IP laws and air-gapped infrastructure.</p>
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div className="p-4 border border-slate-800 bg-slate-900 rounded-2xl text-center">
+                                            <i className="fa-solid fa-lock text-cyan-500 text-2xl mb-2"></i>
+                                            <div className="text-sm font-bold text-white">Zero-Trust IP</div>
+                                        </div>
+                                        <div className="p-4 border border-slate-800 bg-slate-900 rounded-2xl text-center">
+                                            <i className="fa-solid fa-shield-halved text-cyan-500 text-2xl mb-2"></i>
+                                            <div className="text-sm font-bold text-white">AQAP-2110</div>
+                                        </div>
+                                        <div className="p-4 border border-slate-800 bg-slate-900 rounded-2xl text-center">
+                                            <i className="fa-solid fa-arrow-trend-up text-cyan-500 text-2xl mb-2"></i>
+                                            <div className="text-sm font-bold text-white">Traceability</div>
+                                        </div>
+                                        <div className="p-4 border border-slate-800 bg-slate-900 rounded-2xl text-center">
+                                            <i className="fa-solid fa-microscope text-cyan-500 text-2xl mb-2"></i>
+                                            <div className="text-sm font-bold text-white">AOI/X-Ray</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                        </div>
+                    </section>
+
+                    {/* AI STRATEGY ENGINE */}
+                    <section id="ai-engine" className="py-24 bg-slate-900 relative overflow-hidden border-b border-slate-800">
+                        <div className="absolute inset-0 opacity-10 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-cyan-500 via-slate-950 to-slate-950"></div>
+                        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+                            <div className="mb-16 text-center max-w-4xl mx-auto">
+                                <h2 className="text-sm font-bold tracking-widest text-cyan-400 uppercase mb-3">10. Simulation</h2>
+                                <h3 className="text-4xl md:text-5xl font-bold text-white mb-6 tracking-tight">INDUX Industrialization Engine</h3>
+                                <p className="text-lg text-slate-400 leading-relaxed">Experience how INDUX translates your immediate battlefield challenges into a compliant, scalable NATO manufacturing roadmap in real-time.</p>
+                            </div>
+
+                            <div className="grid lg:grid-cols-2 gap-8 max-w-6xl mx-auto">
+                                {/* Input Panel */}
+                                <div className="bg-slate-950 p-8 rounded-3xl border border-slate-800 shadow-xl flex flex-col">
+                                    <label className="block text-sm font-bold text-slate-400 uppercase tracking-wider mb-3">System Platform</label>
+                                    <select 
+                                        value={aiSystemType}
+                                        onChange={(e) => setAiSystemType(e.target.value)}
+                                        className="w-full bg-slate-900 border border-slate-700 rounded-xl p-4 text-white mb-8 focus:ring-1 focus:ring-cyan-500 focus:border-cyan-500 outline-none transition shadow-inner font-medium appearance-none"
+                                    >
+                                        {Object.values(domainsData).map((domain, idx) => (
+                                            <option key={idx} value={domain.title}>{domain.title}</option>
+                                        ))}
+                                    </select>
+
+                                    <label className="block text-sm font-bold text-slate-400 uppercase tracking-wider mb-3">Current Bottleneck / Supply Chain Constraint</label>
+                                    <textarea 
+                                        value={aiBottleneck}
+                                        onChange={(e) => setAiBottleneck(e.target.value)}
+                                        rows="5" 
+                                        className="w-full flex-grow bg-slate-900 border border-slate-700 rounded-xl p-4 text-white mb-8 focus:ring-1 focus:ring-cyan-500 focus:border-cyan-500 outline-none resize-none custom-scrollbar shadow-inner text-sm leading-relaxed" 
+                                        placeholder="e.g., 'We have a combat-proven design, but we rely on Chinese motors and video transmitters. Lead times are 12 weeks, and we have no formal QA documentation for European buyers...'"
+                                    ></textarea>
+
+                                    <button 
+                                        onClick={handleGenerateStrategy}
+                                        disabled={isAiLoading}
+                                        className="w-full bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-lg py-4 px-6 rounded-xl transition-all transform hover:scale-[1.02] active:scale-[0.98] shadow-[0_0_20px_rgba(6,182,212,0.3)] flex items-center justify-center gap-3 disabled:opacity-70 disabled:cursor-not-allowed"
+                                    >
+                                        {isAiLoading ? (
+                                            <><i className="fa-solid fa-circle-notch fa-spin"></i> Analyzing Parameters...</>
+                                        ) : (
+                                            <><i className="fa-solid fa-bolt"></i> Generate NATO Scaling Strategy</>
+                                        )}
+                                    </button>
+                                </div>
+
+                                {/* Output Panel */}
+                                <div className="bg-slate-950 p-8 rounded-3xl border border-slate-800 shadow-2xl flex flex-col relative overflow-hidden">
+                                    <div className="absolute top-0 right-0 w-48 h-48 bg-cyan-500/10 rounded-full blur-3xl -mr-10 -mt-10"></div>
+                                    <h4 className="text-xl font-bold text-cyan-400 mb-6 flex items-center gap-3 border-b border-slate-800 pb-4 relative z-10">
+                                        <i className="fa-solid fa-list-check"></i> Action Plan
+                                    </h4>
+                                    
+                                    <div className="flex-grow overflow-y-auto text-slate-300 space-y-4 z-10 text-sm leading-relaxed pr-2 custom-scrollbar">
+                                        {isAiLoading ? (
+                                            <div className="h-full flex flex-col items-center justify-center space-y-4">
+                                                <i className="fa-solid fa-circle-notch fa-spin text-4xl text-cyan-500 opacity-50"></i>
+                                                <div className="text-cyan-400 animate-pulse text-center font-medium">Formulating INDUX scaling architecture...<br/><span className="text-xs text-slate-500 mt-2 block">Cross-referencing NATO supply chains</span></div>
+                                            </div>
+                                        ) : aiOutput ? (
+                                            <div dangerouslySetInnerHTML={{ __html: aiOutput }} className="prose prose-invert prose-cyan max-w-none"></div>
+                                        ) : (
+                                            <div className="h-full flex flex-col items-center justify-center text-slate-600 text-center space-y-4">
+                                                <i className="fa-solid fa-terminal text-5xl opacity-20"></i>
+                                                <p>Awaiting system parameters and bottleneck description.</p>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    {/* CTA */}
+                    <section className="py-32 px-6 bg-slate-950 text-center relative overflow-hidden">
+                        <div className="absolute inset-0 z-0 opacity-10 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-cyan-500 to-slate-950"></div>
+                        <div className="max-w-3xl mx-auto relative z-10">
+                            <h2 className="text-4xl md:text-6xl font-bold text-white mb-8 tracking-tight">
+                                Connect Your Combat Tech to Europe's Heavy Industry.
+                            </h2>
+                            <p className="text-xl text-slate-400 mb-12 leading-relaxed">
+                                Our infrastructure is operational today. Our financial structures are secured. Our automated lines are waiting. Deliver superiority at the scale the front demands.
+                            </p>
+                            <button className="bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-lg px-8 py-4 rounded-full transition-all hover:scale-105 hover:shadow-[0_0_30px_rgba(6,182,212,0.4)] flex items-center justify-center mx-auto space-x-3">
+                                <i className="fa-solid fa-lock"></i>
+                                <span>Initiate Secure Strategic Dialogue</span>
+                                <i className="fa-solid fa-chevron-right ml-2 text-sm"></i>
+                            </button>
+                        </div>
+                    </section>
+
+                    {/* FOOTER */}
+                    <footer className="bg-slate-900 border-t border-slate-800 py-12">
+                        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row justify-between items-center gap-6">
+                            <div className="text-center md:text-left">
+                                <span className="font-extrabold text-2xl tracking-tighter text-white">INDUX<span className="text-cyan-500">.</span></span>
+                                <p className="text-sm text-slate-500 mt-2">The Industrialization API for Defense Technology.</p>
+                            </div>
+                            <div className="text-center">
+                                <p className="text-sm font-semibold text-slate-400 mb-1">We use factories; we do not work for them.</p>
+                                <p className="text-xs text-slate-500">Our allegiance remains strictly with the innovators.</p>
+                            </div>
+                            <div className="flex space-x-6 text-sm text-slate-400 font-medium">
+                                <a href="#" className="hover:text-cyan-400 transition"><i className="fa-solid fa-envelope mr-2"></i>Contact</a>
+                                <a href="#" className="hover:text-cyan-400 transition"><i className="fa-solid fa-chart-line mr-2"></i>Investors</a>
+                                <a href="#" className="hover:text-cyan-400 transition"><i className="fa-brands fa-linkedin mr-2"></i>LinkedIn</a>
+                            </div>
+                        </div>
+                    </footer>
+
+                </div>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
